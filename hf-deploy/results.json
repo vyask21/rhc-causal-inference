@@ -1,0 +1,36 @@
+{
+  "naive_estimate": 0.073644,
+  "naive_ci": [
+    0.047813,
+    0.099473
+  ],
+  "ipw_estimate": 0.055926,
+  "ipw_ci": [
+    0.022433,
+    0.087667
+  ],
+  "aipw_estimate": 0.059388,
+  "aipw_ci": [
+    0.032968,
+    0.086633
+  ],
+  "e_value_point": 1.6749,
+  "e_value_ci_lower": 1.4528,
+  "e_value_details": {
+    "rr_point": 1.1938,
+    "rr_ci_lower": 1.1076,
+    "baseline_control_rate": 0.3064,
+    "method": "VanderWeele and Ding (2017) E-value for risk ratio, approximated from ATE on probability scale"
+  },
+  "propensity_auc": 0.7855,
+  "bootstrap_seed": 42,
+  "bootstrap_reps": 1000,
+  "propensity_trim": [
+    0.01,
+    0.99
+  ],
+  "outcome_model": "logistic_regression_per_arm",
+  "propensity_model": "logistic_regression_all_confounders_plus_age2",
+  "project": "rhc-causal-inference",
+  "part": "2A"
+}
