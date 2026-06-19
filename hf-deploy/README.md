@@ -7,7 +7,7 @@ sdk: streamlit
 app_file: app.py
 pinned: false
 license: mit
-short_description: Causal effect of Right Heart Catheterization on ICU mortality
+short_description: RHC causal inference on ICU mortality
 ---
 
 # RHC Causal Inference
