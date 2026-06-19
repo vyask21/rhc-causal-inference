@@ -1,0 +1,20 @@
+=== RHC Part 2A Estimation Summary ===
+n=5735, treated=2184, control=3551
+dth30 rate: treated=0.3800, control=0.3064
+Propensity AUC: 0.7855
+
+Estimates (ATE on dth30, positive = RHC increases mortality):
+  Naive:  +0.073644  95%CI [+0.047813, +0.099473]
+  IPW:    +0.055926  95%CI [+0.022433, +0.087667]
+  AIPW:   +0.059388  95%CI [+0.032968, +0.086633]
+Bootstrap: seed=42, reps=1000 (all three, influence-function based for AIPW)
+
+E-value (point): 1.6749 (RR=1.1938)
+E-value (CI lower +0.032968): 1.4528
+
+Benchmark gate: AIPW positive=True, |AIPW|=0.059388, in [0.03,0.08]=True
+
+Saved: /home/node/.openclaw/projects/rhc-causal-inference/results.json
+Saved: /home/node/.openclaw/projects/rhc-causal-inference/notebooks/figs/estimates_forest.png, /home/node/.openclaw/projects/rhc-causal-inference/notebooks/figs/love.png
+Saved: data/interim/smds.csv
+DONE
