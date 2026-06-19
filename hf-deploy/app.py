@@ -146,34 +146,35 @@ slider_specs = [
     ("card_Yes", "Cardiovascular diagnosis", False, True, False, None, "bool"),
 ]
 
-# Build full feature vector with all 66 features
-ALL_FEATURES = [
-    'age', 'age2', 'alb1', 'amihx', 'aps1', 'bili1', 'ca_No', 'ca_Yes',
-    'card_Yes', 'cardiohx', 'cat1_CHF', 'cat1_COPD', 'cat1_Cirrhosis',
-    'cat1_Colon Cancer', 'cat1_Coma', 'cat1_Lung Cancer', 'cat1_MOSF w/Malignancy',
-    'cat1_MOSF w/Sepsis', 'chfhx', 'chrpulhx', 'crea1', 'das2d3pc', 'dementhx',
-    'dnr1_Yes', 'edu', 'gastr_Yes', 'gibledhx', 'hema1', 'hema_Yes', 'hrt1',
-    'immunhx', 'income_$25-$50k', 'income_> $50k', 'income_Under $11k',
-    'liverhx', 'malighx', 'meanbp1', 'meta_Yes', 'neuro_Yes', 'ninsclas_Medicare',
-    'ninsclas_Medicare & Medicaid', 'ninsclas_No insurance', 'ninsclas_Private',
-    'ninsclas_Private & Medicare', 'ortho_Yes', 'paco21', 'pafi1', 'ph1',
-    'pot1', 'psychhx', 'race_other', 'race_white', 'renal_Yes', 'renalhx',
-    'resp1', 'resp_Yes', 'scoma1', 'seps_Yes', 'sex_Male', 'sod1', 'surv2md1',
-    'temp1', 'transhx', 'trauma_Yes', 'wblc1', 'wtkilo1'
-]
+# Use the model's actual expected feature order (not hardcoded)
+ALL_FEATURES = list(prop_model.feature_names_in_)
 
-# Default all features to 0 (continuous features below will be overridden)
-user_features = {f: 0.0 for f in ALL_FEATURES}
+# Population medians from the SUPPORT dataset (pre-computed, embedded for HF Spaces)
+DATA_MEDIANS = {
+    "cardiohx": 0.0, "chfhx": 0.0, "dementhx": 0.0, "psychhx": 0.0,
+    "chrpulhx": 0.0, "renalhx": 0.0, "liverhx": 0.0, "gibledhx": 0.0,
+    "malighx": 0.0, "immunhx": 0.0, "transhx": 0.0, "amihx": 0.0,
+    "age": 64.047, "edu": 12.0, "surv2md1": 0.628, "das2d3pc": 19.7461,
+    "aps1": 54.0, "scoma1": 0.0, "meanbp1": 63.0, "wblc1": 14.0996,
+    "hrt1": 124.0, "resp1": 30.0, "temp1": 38.0938, "pafi1": 202.5,
+    "alb1": 3.5, "hema1": 30.0, "bili1": 1.0098, "crea1": 1.5,
+    "sod1": 136.0, "pot1": 3.7998, "paco21": 37.0, "ph1": 7.4,
+    "wtkilo1": 70.0, "cat1_CHF": 0.0, "cat1_COPD": 0.0, "cat1_Cirrhosis": 0.0,
+    "cat1_Colon Cancer": 0.0, "cat1_Coma": 0.0, "cat1_Lung Cancer": 0.0,
+    "cat1_MOSF w/Malignancy": 0.0, "cat1_MOSF w/Sepsis": 0.0,
+    "ca_No": 1.0, "ca_Yes": 0.0, "sex_Male": 1.0, "dnr1_Yes": 0.0,
+    "ninsclas_Medicare": 0.0, "ninsclas_Medicare & Medicaid": 0.0,
+    "ninsclas_No insurance": 0.0, "ninsclas_Private": 0.0,
+    "ninsclas_Private & Medicare": 0.0, "resp_Yes": 0.0, "card_Yes": 0.0,
+    "neuro_Yes": 0.0, "gastr_Yes": 0.0, "renal_Yes": 0.0, "meta_Yes": 0.0,
+    "hema_Yes": 0.0, "seps_Yes": 0.0, "trauma_Yes": 0.0, "ortho_Yes": 0.0,
+    "race_other": 0.0, "race_white": 1.0,
+    "income_$25-$50k": 0.0, "income_> $50k": 0.0, "income_Under $11k": 1.0,
+    "age2": 4102.018209,
+}
 
-# Set continuous defaults at population medians (approximate from literature)
-user_features.update({
-    "age": 60.0, "age2": 3600.0,
-    "aps1": 50.0, "scoma1": 14.0, "meanbp1": 70.0, "wblc1": 10000.0,
-    "hrt1": 90.0, "resp1": 22.0, "temp1": 37.5, "pafi1": 200.0,
-    "paco21": 40.0, "ph1": 7.35, "alb1": 3.0, "hema1": 36.0,
-    "bili1": 1.5, "crea1": 1.5, "sod1": 140.0, "pot1": 4.0,
-    "wtkilo1": 70.0, "edu": 12.0, "surv2md1": 0.5, "das2d3pc": 40.0,
-})
+# Default all features to population medians
+user_features = {f: DATA_MEDIANS.get(f, 0.0) for f in ALL_FEATURES}
 
 col_sl1, col_sl2 = st.columns(2)
 
@@ -199,8 +200,14 @@ with col_sl2:
 if "age" in user_features:
     user_features["age2"] = user_features["age"] ** 2
 
-# Build feature vector in exact model order
+# Build feature vector in the model's expected order
 feat_vec = np.array([user_features.get(f, 0.0) for f in ALL_FEATURES]).reshape(1, -1)
+
+# Defensive assertion: feature order must match what the model was trained on
+assert list(ALL_FEATURES) == list(prop_model.feature_names_in_), (
+    f"Feature order mismatch! "
+    f"First diff at index {next((i for i, (a, b) in enumerate(zip(ALL_FEATURES, prop_model.feature_names_in_)) if a != b), '?')}"
+)
 
 # Predict propensity for hypothetical patient
 try:

@@ -176,28 +176,25 @@ with col_sl2:
 
 user_features["age2"] = user_features.get("age", BASELINE.get("age", 60.0)) ** 2
 
-# Build feature vector in the same order as the model
-feature_order = [c for c in confounder_cols if c != "age2"]
-if "age2" in [c for c in confounder_cols]:
-    feature_order.append("age2")
-elif "age" in confounder_cols:
-    age_idx = [i for i, c in enumerate(confounder_cols) if c == "age"]
-    if age_idx:
-        feature_order.insert(age_idx[0] + 1, "age2")
+# Use the model's actual expected feature order (not hardcoded or inferred from parquet)
+MODEL_FEATURES = list(prop_model.feature_names_in_)
 
-# Create a DataFrame with all features
+# Build feature vector in the model's expected order
 feat_vec = []
-feat_names_ordered = []
-for c in confounder_cols:
+for c in MODEL_FEATURES:
     if c == "age2":
-        feat_names_ordered.append(c)
-        feat_vec.append(float(user_features.get("age2", 60.0 ** 2)))
+        feat_vec.append(float(user_features.get("age", BASELINE.get("age", 60.0)) ** 2))
     else:
-        feat_names_ordered.append(c)
         val = user_features.get(c, BASELINE.get(c, 0))
         feat_vec.append(float(val) if not isinstance(val, bool) else (1.0 if val else 0.0))
 
 X_pred = np.array(feat_vec).reshape(1, -1)
+
+# Defensive assertion: feature order must match what the model was trained on
+assert list(MODEL_FEATURES) == list(prop_model.feature_names_in_), (
+    f"Feature order mismatch! "
+    f"First diff at index {next((i for i, (a, b) in enumerate(zip(MODEL_FEATURES, prop_model.feature_names_in_)) if a != b), '?')}"
+)
 
 # Predict propensity for hypothetical patient
 try:
