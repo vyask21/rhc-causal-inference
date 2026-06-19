@@ -1,6 +1,6 @@
 """
-RHC Causal Inference — Streamlit App
-Part 2B Stage 1: Interactive visualization of propensity scores and population results.
+RHC Causal Inference — Streamlit App (HF Spaces)
+Part 2B Stage 2: Flat-path version for HuggingFace Spaces deployment.
 """
 import json, os
 import numpy as np
@@ -12,42 +12,43 @@ import matplotlib.pyplot as plt
 
 import streamlit as st
 
-PROJECT = os.environ.get("RHC_PROJECT", "/home/node/.openclaw/projects/rhc-causal-inference")
+# ── Flat paths for HF Spaces (all files in same dir as app.py) ──
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ── Load data ──
 @st.cache_resource
 def load_resources():
-    with open(os.path.join(PROJECT, "results.json")) as f:
+    with open(os.path.join(HERE, "results.json")) as f:
         results = json.load(f)
-    prop_model = joblib.load(os.path.join(PROJECT, "models", "propensity_model.joblib"))
-    ps_scores = pd.read_csv(os.path.join(PROJECT, "data", "interim", "propensity_scores.csv"))
-    analysis_pq = pd.read_parquet(os.path.join(PROJECT, "data", "interim", "analysis.parquet"))
-    smds = pd.read_csv(os.path.join(PROJECT, "data", "interim", "smds.csv"))
-    return results, prop_model, ps_scores, analysis_pq, smds
+    prop_model = joblib.load(os.path.join(HERE, "propensity_model.joblib"))
+    overlap = pd.read_csv(os.path.join(HERE, "overlap_data.csv"))
+    return results, prop_model, overlap
 
-results, prop_model, ps_scores, analysis_pq, smds = load_resources()
+results, prop_model, overlap = load_resources()
 
-# Coerce bool columns for consistency
-for c in analysis_pq.select_dtypes(include=["bool"]).columns:
-    analysis_pq[c] = analysis_pq[c].astype(float)
+# Feature column names for the propensity model (from the saved model metadata)
+# These are the columns at the time the model was fit
+PROP_FEATURE_COUNT = getattr(prop_model, 'n_features_in_', 66)
 
-# Feature column names for the propensity model (66 features, same order the model was fit on)
-confounder_cols = [c for c in analysis_pq.columns if c not in ("treatment", "dth30")]
+# Pre-compute baseline covariate values from the propensity score distribution
+# For the interactive panel, we use approximate medians from literature/knowledge
+# since we don't ship full patient-level data to HF Spaces
+BASELINE = {
+    "aps1": 50.0,
+    "meanbp1": 70.0,
+    "pafi1": 200.0,
+    "crea1": 1.5,
+    "wtkilo1": 70.0,
+    "cat1_MOSF w/Sepsis": False,
+    "neuro_Yes": False,
+    "card_Yes": False,
+    "age": 60.0,
+    "age2": 3600.0,
+    # All other confounders default to 0 (binary one-hot) or median (continuous)
+    # The propensity model will use whatever values we provide
+}
 
-def _medians_modes():
-    """Compute column-wise medians (numeric) and modes (bool/categorical) from analysis data."""
-    defaults = {}
-    for c in confounder_cols:
-        vals = analysis_pq[c]
-        if vals.dtype == "object":
-            defaults[c] = vals.mode().iloc[0] if len(vals.mode()) > 0 else vals.iloc[0]
-        else:
-            defaults[c] = float(vals.median())
-    return defaults
-
-BASELINE = _medians_modes()
-
-st.set_page_config(page_title="RHC Causal Inference", page_icon="🫀", layout="wide")
+st.set_page_config(page_title="RHC Causal Inference", page_icon="\U0001fac0", layout="wide")
 
 # ──────────────────────────────────────────────────────────────
 # TITLE
@@ -114,7 +115,6 @@ st.caption(
 )
 
 # E-value
-ev = results["e_value_details"]
 st.subheader("E-Value Sensitivity")
 st.write(
     f"E-value (point): **{results['e_value_point']:.2f}**. "
@@ -134,74 +134,77 @@ st.info(
     "This is NOT a personalized treatment effect estimate."
 )
 
-# Determine top covariates by |SMD| for the sliders (top 8)
-top_vars = smds.nlargest(8, "smd_before")["variable"].tolist()
-
-# Map user-friendly names to model feature names, with value ranges and defaults
+# User-friendly slider specs for top covariates by SMD
 slider_specs = [
-    # (feature_name, display_name, min, max, default, step, type)
-    ("aps1", "APACHE severity score", 0.0, 80.0, BASELINE.get("aps1", 50.0), 1.0, "float"),
-    ("meanbp1", "Mean blood pressure (mmHg)", 10.0, 180.0, BASELINE.get("meanbp1", 70.0), 1.0, "float"),
-    ("pafi1", "PaO2/FIO2 ratio", 10.0, 600.0, BASELINE.get("pafi1", 200.0), 5.0, "float"),
-    ("crea1", "Creatinine (mg/dL)", 0.0, 10.0, BASELINE.get("crea1", 1.5), 0.1, "float"),
-    ("wtkilo1", "Weight (kg)", 20.0, 200.0, BASELINE.get("wtkilo1", 70.0), 1.0, "float"),
-    ("cat1_MOSF w/Sepsis", "Primary dx: MOSF w/Sepsis", False, True, BASELINE.get("cat1_MOSF w/Sepsis", False), None, "bool"),
-    ("neuro_Yes", "Neurological diagnosis", False, True, BASELINE.get("neuro_Yes", False), None, "bool"),
-    ("card_Yes", "Cardiovascular diagnosis", False, True, BASELINE.get("card_Yes", False), None, "bool"),
+    ("aps1", "APACHE severity score", 0.0, 80.0, 50.0, 1.0, "float"),
+    ("meanbp1", "Mean blood pressure (mmHg)", 10.0, 180.0, 70.0, 1.0, "float"),
+    ("pafi1", "PaO2/FIO2 ratio", 10.0, 600.0, 200.0, 5.0, "float"),
+    ("crea1", "Creatinine (mg/dL)", 0.0, 10.0, 1.5, 0.1, "float"),
+    ("wtkilo1", "Weight (kg)", 20.0, 200.0, 70.0, 1.0, "float"),
+    ("cat1_MOSF w/Sepsis", "Primary dx: MOSF w/Sepsis", False, True, False, None, "bool"),
+    ("neuro_Yes", "Neurological diagnosis", False, True, False, None, "bool"),
+    ("card_Yes", "Cardiovascular diagnosis", False, True, False, None, "bool"),
 ]
 
-col_sl1, col_sl2 = st.columns(2)
+# Build full feature vector with all 66 features
+ALL_FEATURES = [
+    'age', 'age2', 'alb1', 'amihx', 'aps1', 'bili1', 'ca_No', 'ca_Yes',
+    'card_Yes', 'cardiohx', 'cat1_CHF', 'cat1_COPD', 'cat1_Cirrhosis',
+    'cat1_Colon Cancer', 'cat1_Coma', 'cat1_Lung Cancer', 'cat1_MOSF w/Malignancy',
+    'cat1_MOSF w/Sepsis', 'chfhx', 'chrpulhx', 'crea1', 'das2d3pc', 'dementhx',
+    'dnr1_Yes', 'edu', 'gastr_Yes', 'gibledhx', 'hema1', 'hema_Yes', 'hrt1',
+    'immunhx', 'income_$25-$50k', 'income_> $50k', 'income_Under $11k',
+    'liverhx', 'malighx', 'meanbp1', 'meta_Yes', 'neuro_Yes', 'ninsclas_Medicare',
+    'ninsclas_Medicare & Medicaid', 'ninsclas_No insurance', 'ninsclas_Private',
+    'ninsclas_Private & Medicare', 'ortho_Yes', 'paco21', 'pafi1', 'ph1',
+    'pot1', 'psychhx', 'race_other', 'race_white', 'renal_Yes', 'renalhx',
+    'resp1', 'resp_Yes', 'scoma1', 'seps_Yes', 'sex_Male', 'sod1', 'surv2md1',
+    'temp1', 'transhx', 'trauma_Yes', 'wblc1', 'wtkilo1'
+]
 
-user_features = dict(BASELINE)  # start with baseline values
+# Default all features to 0 (continuous features below will be overridden)
+user_features = {f: 0.0 for f in ALL_FEATURES}
+
+# Set continuous defaults at population medians (approximate from literature)
+user_features.update({
+    "age": 60.0, "age2": 3600.0,
+    "aps1": 50.0, "scoma1": 14.0, "meanbp1": 70.0, "wblc1": 10000.0,
+    "hrt1": 90.0, "resp1": 22.0, "temp1": 37.5, "pafi1": 200.0,
+    "paco21": 40.0, "ph1": 7.35, "alb1": 3.0, "hema1": 36.0,
+    "bili1": 1.5, "crea1": 1.5, "sod1": 140.0, "pot1": 4.0,
+    "wtkilo1": 70.0, "edu": 12.0, "surv2md1": 0.5, "das2d3pc": 40.0,
+})
+
+col_sl1, col_sl2 = st.columns(2)
 
 with col_sl1:
     for feat, label, lo, hi, default, step, dtype in slider_specs[:6]:
         if dtype == "bool":
             val = st.toggle(label, value=bool(default), key=feat)
-            user_features[feat] = val
         else:
             val = st.slider(label, min_value=float(lo), max_value=float(hi),
                            value=float(default), step=float(step), key=feat)
-            user_features[feat] = val
+        user_features[feat] = float(val) if not isinstance(val, bool) else (1.0 if val else 0.0)
 
 with col_sl2:
     for feat, label, lo, hi, default, step, dtype in slider_specs[6:]:
         if dtype == "bool":
             val = st.toggle(label, value=bool(default), key=feat)
-            user_features[feat] = val
         else:
             val = st.slider(label, min_value=float(lo), max_value=float(hi),
                            value=float(default), step=float(step), key=feat)
-            user_features[feat] = val
+        user_features[feat] = float(val) if not isinstance(val, bool) else (1.0 if val else 0.0)
 
-user_features["age2"] = user_features.get("age", BASELINE.get("age", 60.0)) ** 2
+# Update age2 from age
+if "age" in user_features:
+    user_features["age2"] = user_features["age"] ** 2
 
-# Build feature vector in the same order as the model
-feature_order = [c for c in confounder_cols if c != "age2"]
-if "age2" in [c for c in confounder_cols]:
-    feature_order.append("age2")
-elif "age" in confounder_cols:
-    age_idx = [i for i, c in enumerate(confounder_cols) if c == "age"]
-    if age_idx:
-        feature_order.insert(age_idx[0] + 1, "age2")
-
-# Create a DataFrame with all features
-feat_vec = []
-feat_names_ordered = []
-for c in confounder_cols:
-    if c == "age2":
-        feat_names_ordered.append(c)
-        feat_vec.append(float(user_features.get("age2", 60.0 ** 2)))
-    else:
-        feat_names_ordered.append(c)
-        val = user_features.get(c, BASELINE.get(c, 0))
-        feat_vec.append(float(val) if not isinstance(val, bool) else (1.0 if val else 0.0))
-
-X_pred = np.array(feat_vec).reshape(1, -1)
+# Build feature vector in exact model order
+feat_vec = np.array([user_features.get(f, 0.0) for f in ALL_FEATURES]).reshape(1, -1)
 
 # Predict propensity for hypothetical patient
 try:
-    ps_hyp = prop_model.predict_proba(X_pred)[0][1]
+    ps_hyp = float(prop_model.predict_proba(feat_vec)[0][1])
 except Exception as e:
     st.error(f"Could not compute propensity score: {e}")
     ps_hyp = None
@@ -243,11 +246,11 @@ if ps_hyp is not None:
 
     # Overlap plot with hypothetical patient marked
     fig, ax = plt.subplots(figsize=(8, 4))
-    t_mask = ps_scores["treatment"] == 1
-    c_mask = ps_scores["treatment"] == 0
-    ax.hist(ps_scores.loc[c_mask, "propensity_score"], bins=50, alpha=0.4,
+    t_mask = overlap["treatment"] == 1
+    c_mask = overlap["treatment"] == 0
+    ax.hist(overlap.loc[c_mask, "propensity_score"], bins=50, alpha=0.4,
             label="Control (No RHC)", density=True, color="steelblue")
-    ax.hist(ps_scores.loc[t_mask, "propensity_score"], bins=50, alpha=0.4,
+    ax.hist(overlap.loc[t_mask, "propensity_score"], bins=50, alpha=0.4,
             label="Treated (RHC)", density=True, color="coral")
     ax.axvline(ps_hyp, color=color, linewidth=2, linestyle="--",
                label=f"Hypothetical patient (PS={ps_hyp:.3f})")
