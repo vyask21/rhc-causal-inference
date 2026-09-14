@@ -308,6 +308,6 @@ st.markdown("""
 # ──────────────────────────────────────────────────────────────
 st.divider()
 st.caption(
-    "Code: [github.com/atreus-01/rhc-causal-inference](https://github.com/atreus-01/rhc-causal-inference) | "
+    "Code: [github.com/vyask21/rhc-causal-inference](https://github.com/vyask21/rhc-causal-inference) | "
     "Hosted on HuggingFace Spaces (free tier). Sleeps after inactivity, ~30s cold start on wake."
 )

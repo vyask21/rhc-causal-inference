@@ -73,7 +73,7 @@ rhc-causal-inference/
 
 ```bash
 # 1. Clone and enter the project
-git clone https://github.com/atreus-01/rhc-causal-inference.git
+git clone https://github.com/vyask21/rhc-causal-inference.git
 cd rhc-causal-inference
 
 # 2. Set up the virtual environment

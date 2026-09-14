@@ -27,4 +27,4 @@ Propensity score model (logistic regression on 65 confounders), stabilized inver
 
 ## Source Code
 
-[github.com/atreus-01/rhc-causal-inference](https://github.com/atreus-01/rhc-causal-inference)
+[github.com/vyask21/rhc-causal-inference](https://github.com/vyask21/rhc-causal-inference)
