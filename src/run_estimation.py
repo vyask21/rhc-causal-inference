@@ -13,7 +13,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # ── Paths ──
-PROJECT = "/home/node/.openclaw/projects/rhc-causal-inference"
+PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARQUET = f"{PROJECT}/data/interim/analysis.parquet"
 PS_CSV   = f"{PROJECT}/data/interim/propensity_scores.csv"
 MODEL    = f"{PROJECT}/models/propensity_model.joblib"

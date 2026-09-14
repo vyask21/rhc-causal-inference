@@ -2,9 +2,13 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
+
+# Resolve the project root, so the notebook runs from the repo root or from notebooks/.
+PROJ = next(p for p in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents] if (p / "requirements.txt").exists())
 
 # %%
-df = pd.read_csv('/home/node/.openclaw/projects/rhc-causal-inference/data/raw/rhc.csv')
+df = pd.read_csv(PROJ / 'data/raw/rhc.csv')
 print(f"Loaded {len(df)} rows")
 
 # %%
@@ -116,7 +120,7 @@ ax.set_title('Pre-treatment Covariate Imbalance (SMD)')
 ax.invert_yaxis()
 ax.legend()
 plt.tight_layout()
-plt.savefig('/home/node/.openclaw/projects/rhc-causal-inference/notebooks/figs/smd_pre.png', dpi=150)
+plt.savefig(PROJ / 'notebooks/figs/smd_pre.png', dpi=150)
 print("Saved smd_pre.png")
 
 # %%
@@ -134,5 +138,5 @@ for bar, rate in zip(bars, rates):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01, 
             f'{rate:.1%}', ha='center', va='bottom', fontsize=12)
 plt.tight_layout()
-plt.savefig('/home/node/.openclaw/projects/rhc-causal-inference/notebooks/figs/outcome_by_arm.png', dpi=150)
+plt.savefig(PROJ / 'notebooks/figs/outcome_by_arm.png', dpi=150)
 print("Saved outcome_by_arm.png")

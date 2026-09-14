@@ -1,0 +1,3 @@
+# Executed notebook exports. Generated artifacts rather than source, so they are kept
+# out of the language statistics and collapsed in diffs.
+notebooks/*.html linguist-generated=true

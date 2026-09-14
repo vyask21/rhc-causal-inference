@@ -1,1 +1,10 @@
 .venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Internal working notes: kept on disk, not published. CONTEXT.md is the build brief
+# written while the analysis was being put together, and logs/ holds run transcripts.
+# Every number they carry is already in results.json and the README.
+CONTEXT.md
+logs/

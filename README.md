@@ -2,6 +2,8 @@
 
 Causal inference analysis of Right Heart Catheterization (RHC) using the SUPPORT study data to estimate the effect of RHC on 30-day mortality in critically ill ICU patients.
 
+Interactive demo: [huggingface.co/spaces/vyask21/rhc-causal-inference](https://huggingface.co/spaces/vyask21/rhc-causal-inference)
+
 ## Background
 
 Should critically ill patients who present with respiratory symptoms and a high probability of a cardiopulmonary diagnosis receive Right Heart Catheterization within the first 24 hours of ICU admission? This analysis estimates the causal effect of that clinical decision on 30-day mortality.
@@ -53,7 +55,7 @@ rhc-causal-inference/
 ├── data/
 │   ├── raw/              # raw CSV from hbiostat.org
 │   ├── interim/          # analysis.parquet, propensity scores, SMDs
-│   └── processed/        # (future)
+│   └── processed/        # reserved, currently unused
 ├── notebooks/
 │   ├── 01_eda.py         # exploratory analysis: SMDs, missingness, plots
 │   ├── 02_evaluation.py  # evaluation: estimates, benchmarks, citations
@@ -63,8 +65,8 @@ rhc-causal-inference/
 │   └── run_estimation.py # standalone estimation script (naive, IPW, AIPW, bootstrap, E-value)
 ├── models/
 │   └── propensity_model.joblib  # fitted logistic propensity model
-├── app/                  # (upcoming) streaming delivery interface
-├── hf-deploy/            # (upcoming) HuggingFace Spaces deployment
+├── app/                  # Streamlit app: propensity explorer and population results
+├── hf-deploy/            # flat-path copy of the app deployed to Hugging Face Spaces
 ├── results.json          # all estimates, CIs, E-values, configuration
 └── requirements.txt      # pinned venv dependencies
 ```
@@ -102,3 +104,7 @@ All results are reproducible with a fixed random seed (42) for bootstrap resampl
 - Crump, R. K., Hotz, V. J., Imbens, G. W., & Mitnik, O. A. (2009). Dealing with limited overlap in estimation of average treatment effects. *Biometrika*, 96(1), 187-199.
 - VanderWeele, T. J., & Ding, P. (2017). Sensitivity analysis in observational research: Introducing the E-value. *Annals of Internal Medicine*, 167(4), 268-274.
 - Rosenbaum, P. R. (2012). *Observational Studies* (2nd ed.). Springer.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

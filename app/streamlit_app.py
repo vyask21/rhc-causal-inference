@@ -12,7 +12,9 @@ import matplotlib.pyplot as plt
 
 import streamlit as st
 
-PROJECT = os.environ.get("RHC_PROJECT", "/home/node/.openclaw/projects/rhc-causal-inference")
+PROJECT = os.environ.get(
+    "RHC_PROJECT", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 # ── Load data ──
 @st.cache_resource

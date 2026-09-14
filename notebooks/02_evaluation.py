@@ -18,8 +18,12 @@
 # %%
 import pandas as pd
 import json
+import pathlib
 
-pq = pd.read_parquet('/home/node/.openclaw/projects/rhc-causal-inference/data/interim/analysis.parquet')
+# Resolve the project root, so the notebook runs from the repo root or from notebooks/.
+PROJ = next(p for p in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents] if (p / "requirements.txt").exists())
+
+pq = pd.read_parquet(PROJ / 'data/interim/analysis.parquet')
 n = len(pq)
 treated = pq['treatment'].sum()
 control = (pq['treatment'] == 0).sum()
@@ -36,7 +40,7 @@ print(f"Naive difference: {rate_t - rate_c:+.4f}")
 # Logistic regression on all confounders plus age^2. Propensity scores estimated once, used for IPW and AIPW.
 
 # %%
-ps = pd.read_csv('/home/node/.openclaw/projects/rhc-causal-inference/data/interim/propensity_scores.csv')
+ps = pd.read_csv(PROJ / 'data/interim/propensity_scores.csv')
 from sklearn.metrics import roc_auc_score
 auc = roc_auc_score(ps['treatment'], ps['propensity_score'])
 print(f"Propensity model AUC: {auc:.4f}")
@@ -52,7 +56,7 @@ print(f"Above 0.95: {(ps['propensity_score'] > 0.95).sum()} ({(ps['propensity_sc
 # ![Love Plot](figs/love.png)
 
 # %%
-smds = pd.read_csv('/home/node/.openclaw/projects/rhc-causal-inference/data/interim/smds.csv')
+smds = pd.read_csv(PROJ / 'data/interim/smds.csv')
 print("Top 10 SMDs (before IPW):")
 print(smds.head(10)[['variable', 'smd_before', 'smd_after']].to_string(index=False))
 
@@ -62,7 +66,7 @@ print(smds.head(10)[['variable', 'smd_before', 'smd_after']].to_string(index=Fal
 # All estimates are on the dth30 scale (1 = died within 30 days). Positive = RHC increases mortality.
 
 # %%
-with open('/home/node/.openclaw/projects/rhc-causal-inference/results.json') as f:
+with open(PROJ / 'results.json') as f:
     r = json.load(f)
 
 print(f"Naive:  {r['naive_estimate']:+.6f}  95%CI [{r['naive_ci'][0]:+.6f}, {r['naive_ci'][1]:+.6f}]")
